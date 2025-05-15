@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>リッチメッセージジェネレーター</title>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Robotoフォントを読み込み -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <style>
-        /* Google Sansフォントを適用 */
+        /* Robotoフォントを適用 */
         body {
-            font-family: 'Google Sans', sans-serif;
+            font-family: 'Roboto', sans-serif; /* Google SansからRobotoに変更 */
         }
         /* メッセージのフェードインアニメーション */
         @keyframes fadein {
@@ -170,7 +171,7 @@
         const changeCounterButton = document.getElementById('change-counter-button');
         const changeCounterPopup = document.getElementById('change-counter-popup');
         const confirmChangeCounterButton = document.getElementById('confirm-change-counter');
-        const cancelChangeCounterButton = document.getElementById('cancel-change-counter');
+        const cancelChangeCounterButton = documentgetElementById('cancel-change-counter');
         const newCounterValueInput = document.getElementById('new-counter-value');
         const counterStatusDisplay = document.getElementById('counter-status');
 
@@ -420,26 +421,29 @@
 
         function changeCounterValue() {
             const newCounterValue = parseInt(newCounterValueInput.value);
-            if (!isNaN(newCounterValue)) {
+            if (!isNaN(newCounterValue) && newCounterValue >= 0) { // 負の数は許可しない
                 totalMessages = newCounterValue;
                 totalMessagesDisplay.textContent = formatCounter(totalMessages);
-                messageRateDisplay.textContent = '0 msg/s';
+                messageRateDisplay.textContent = '0 msg/s'; // レートはリセット
                 messagesPerSecond = 0;
                 messageCountThisSecond = 0;
-                lastTime = performance.now();
+                lastTime = performance.now(); // 時間もリセットして新しいレート計算を開始
                 changeCounterPopup.classList.add('hidden');
                 isChangingCounter = false;
                 counterStatusDisplay.textContent = '変更済み';
                 counterChanged = true;
-                newCounterValueInput.value = "";
+                newCounterValueInput.value = ""; // 入力フィールドをクリア
+                // カウンター変更後も自動生成は続ける場合はここに追加
+                // startMessageGeneration();
             } else {
-                alert("有効な数値を入力してください。");
+                alert("有効な0以上の数値を入力してください。");
             }
         }
 
         function cancelChangeCounter() {
             changeCounterPopup.classList.add('hidden');
             isChangingCounter = false;
+            newCounterValueInput.value = ""; // 入力フィールドをクリア
         }
 
         messageSpeedInput.addEventListener('input', startMessageGeneration);
