@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リッチメッセージジェネレーター</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        /* Google Sansフォントを適用 */
+        body {
+            font-family: 'Google Sans', sans-serif;
+        }
+        /* メッセージのフェードインアニメーション */
+        @keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadein 0.5s;
+        }
+        /* スクロールバーのスタイル */
+        #message-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #message-container::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        #message-container::-webkit-scrollbar-thumb {
+            background-color: #888;
+            border-radius: 10px;
+        }
+        #message-container::-webkit-scrollbar-thumb:hover {
+            background-color: #555;
+        }
+        .username {
+            font-weight: bold;
+        }
+        .certified-username {
+            color: #00ffff;
+        }
+        .uncertified-username {
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 flex justify-center items-center min-h-screen p-4">
+    <div class="max-w-3xl w-full space-y-6">
+        <div class="text-center fade-in">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">リッチメッセージジェネレーター</h1>
+            <p class="text-gray-600 dark:text-gray-400">メッセージを生成して表示します。</p>
+        </div>
+
+        <div id="message-container" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md p-4 overflow-y-auto max-h-[50vh] fade-in">
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center fade-in">
+            <div class="flex items-center gap-4">
+                <label for="message-speed" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">メッセージ速度:</label>
+                <input type="range" id="message-speed" min="1" max="200" value="100" class="w-48">
+                <span id="speed-value" class="text-gray-700 dark:text-gray-300 text-sm font-medium">100 msg/s</span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="counter bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md p-2 text-gray-700 dark:text-gray-300 fade-in">
+                    Total Msg: <span id="total-messages">0</span>
+                    <div id="message-rate" class="text-sm text-gray-500 dark:text-gray-400">0 msg/s</div>
+                    <div id="counter-status" class="text-xs text-gray-500 dark:text-gray-400"></div>
+                </div>
+            </div>
+            <button id="reset-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                リセット
+            </button>
+            <button id="change-counter-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                カウンター数値変更
+            </button>
+        </div>
+
+        <div class="flex gap-2 fade-in">
+            <input type="text" id="message-input" placeholder="メッセージを入力してください..." class="flex-1 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800">
+            <button id="send-message-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                送信
+            </button>
+        </div>
+
+        <div id="reset-popup" class="fixed z-10 inset-0 overflow-y-auto hidden fade-in">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                    <div class="absolute inset-0 bg-gray-500 dark:bg-gray-700 opacity-75"></div>
+                </div>
+
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full modal">
+                    <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 fade-in">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                                    本当にメッセージを削除しますか？
+                                </h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        すべてのメッセージが削除されます。この操作は元に戻せません。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse fade-in">
+                        <button id="confirm-reset" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            はい
+                        </button>
+                        <button id="cancel-reset" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-600 text-base font-medium text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            いいえ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="change-counter-popup" class="fixed z-10 inset-0 overflow-y-auto hidden fade-in">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                    <div class="absolute inset-0 bg-gray-500 dark:bg-gray-700 opacity-75"></div>
+                </div>
+
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full modal">
+                    <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 fade-in">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                                    カウンター数値を変更
+                                </h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        Total Msg の数値を入力してください。
+                                    </p>
+                                    <label for="new-counter-value" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mt-4">
+                                        Total Msgの値を入力
+                                    </label>
+                                    <input type="number" id="new-counter-value" placeholder="例: 100000" class="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-transparent bg-white dark:bg-gray-800">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse fade-in">
+                        <button id="confirm-change-counter" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            変更
+                        </button>
+                        <button id="cancel-change-counter" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-600 text-base font-medium text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            キャンセル
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const messageContainer = document.getElementById('message-container');
+        const messageSpeedInput = document.getElementById('message-speed');
+        const speedValueDisplay = document.getElementById('speed-value');
+        const totalMessagesDisplay = document.getElementById('total-messages');
+        const resetButton = document.getElementById('reset-button');
+        const resetPopup = document.getElementById('reset-popup');
+        const confirmResetButton = document.getElementById('confirm-reset');
+        const cancelResetButton = document.getElementById('cancel-reset');
+        const sendMessageButton = document.getElementById('send-message-button');
+        const messageInput = document.getElementById('message-input');
+        const messageRateDisplay = document.getElementById('message-rate');
+        const changeCounterButton = document.getElementById('change-counter-button');
+        const changeCounterPopup = document.getElementById('change-counter-popup');
+        const confirmChangeCounterButton = document.getElementById('confirm-change-counter');
+        const cancelChangeCounterButton = document.getElementById('cancel-change-counter');
+        const newCounterValueInput = document.getElementById('new-counter-value');
+        const counterStatusDisplay = document.getElementById('counter-status');
+
+        let totalMessages = 0;
+        let messagesPerSecond = 0;
+        let lastTime = 0;
+        let messageCountThisSecond = 0;
+        let intervalId;
+        let isResetting = false;
+        let isChangingCounter = false;
+        let counterChanged = false;
+
+        const usernames = [
+            "Akari", "Botan", "Chihiro", "Daichi", "Emi", "Fujio", "Ginji", "Haruki", "Izumi", "Jun",
+            "Kaori", "Kenji", "Luna", "Masato", "Nanami", "Osamu", "Ren", "Sakura", "Takashi", "Umi",
+            "Yuuto", "Wakaba", "Xavier", "Yui", "Zen"
+        ];
+
+        const messages = [
+            "こんにちは！", "こんばんは！", "おはようございます！", "お元気ですか？", "良い一日を！",
+            "はじめまして！", "よろしくお願いします！", "今日も一日頑張りましょう！", "お疲れ様でした！", "ゆっくり休んでくださいね。",
+            "また明日！", "おやすみなさい！", "楽しい週末を！", "素敵な一日になりますように！", "応援しています！",
+            "頑張ってください！", "ファイトー！", "ナイスファイト！", "やったー！", "すごい！",
+            "おめでとうございます！", "素晴らしい！", "最高です！", "元気ですか？", "調子はどうですか？"
+        ];
+
+        function generateRandomUsername() {
+            const minLength = 1;
+            const maxLength = 25;
+            const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
+            let username = '';
+            for (let i = 0; i < length; i++) {
+                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                const randomIndex = Math.floor(Math.random() * characters.length);
+                username += characters.charAt(randomIndex);
+            }
+            return username;
+        }
+
+        function formatCounter(count) {
+            let formattedCount = count;
+            let unit = "";
+            let precision = 0;
+
+            if (count >= 1e100) {
+                formattedCount = count / 1e100;
+                unit = " Googol";
+            } else if (count >= 1e96) {
+                formattedCount = count / 1e96;
+                unit = " P";
+            } else if (count >= 1e93) {
+                formattedCount = count / 1e93;
+                unit = " L";
+            } else if (count >= 1e90) {
+                formattedCount = count / 1e90;
+                unit = " J";
+            } else if (count >= 1e87) {
+                formattedCount = count / 1e87;
+                unit = " I";
+            } else if (count >= 1e84) {
+                formattedCount = count / 1e84;
+                unit = " H";
+            } else if (count >= 1e81) {
+                formattedCount = count / 1e81;
+                unit = " G";
+            } else if (count >= 1e78) {
+                formattedCount = count / 1e78;
+                unit = " F";
+            } else if (count >= 1e75) {
+                formattedCount = count / 1e75;
+                unit = " E";
+            } else if (count >= 1e72) {
+                formattedCount = count / 1e72;
+                unit = " C";
+            } else if (count >= 1e69) {
+                formattedCount = count / 1e69;
+                unit = " A";
+            } else if (count >= 1e66) {
+                formattedCount = count / 1e66;
+                unit = " UNV";
+            } else if (count >= 1e63) {
+                formattedCount = count / 1e63;
+                unit = " V";
+            } else if (count >= 1e60) {
+                formattedCount = count / 1e60;
+                unit = " NV";
+            } else if (count >= 1e57) {
+                formattedCount = count / 1e57;
+                unit = " Oct";
+            } else if (count >= 1e54) {
+                formattedCount = count / 1e54;
+                unit = " Sepd";
+            } else if (count >= 1e51) {
+                formattedCount = count / 1e51;
+                unit = " Sd";
+            } else if (count >= 1e48) {
+                formattedCount = count / 1e48;
+                unit = " Qd";
+            } else if (count >= 1e45) {
+                formattedCount = count / 1e45;
+                unit = " Qua";
+            } else if (count >= 1e42) {
+                formattedCount = count / 1e42;
+                unit = " Tre";
+            } else if (count >= 1e39) {
+                formattedCount = count / 1e39;
+                unit = " Duo";
+            } else if (count >= 1e36) {
+                formattedCount = count / 1e36;
+                unit = " Ud";
+            } else if (count >= 1e33) {
+                formattedCount = count / 1e33;
+                unit = " D";
+            } else if (count >= 1e30) {
+                formattedCount = count / 1e30;
+                unit = " N";
+            } else if (count >= 1e27) {
+                formattedCount = count / 1e27;
+                unit = " O";
+            } else if (count >= 1e24) {
+                formattedCount = count / 1e24;
+                unit = " Sp";
+            } else if (count >= 1e21) {
+                formattedCount = count / 1e21;
+                unit = " Sx";
+            } else if (count >= 1e18) {
+                formattedCount = count / 1e18;
+                unit = " Qu";
+            } else if (count >= 1e15) {
+                formattedCount = count / 1e15;
+                unit = " Q";
+            } else if (count >= 1e12) {
+                formattedCount = count / 1e12;
+                unit = " T";
+            } else if (count >= 1e9) {
+                formattedCount = count / 1e9;
+                unit = " B";
+            } else if (count >= 1e6) {
+                formattedCount = count / 1e6;
+                unit = " M";
+            } else if (count >= 1e3) {
+                formattedCount = count / 1e3;
+                unit = " K";
+            }
+
+            if (formattedCount < 10) {
+                precision = 2;
+            } else if (formattedCount < 100) {
+                precision = 1;
+            } else {
+                precision = 0;
+            }
+
+            return formattedCount.toFixed(precision) + unit;
+        }
+
+        function generateMessage(isCertified = false, customMessage = null) {
+            const username = customMessage ? 'me' : generateRandomUsername();
+            const message = customMessage || messages[Math.floor(Math.random() * messages.length)];
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('mb-2', 'p-2', 'rounded-md', 'fade-in');
+            messageElement.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'bg-gray-700' : 'bg-gray-100');
+            messageElement.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'text-white' : 'text-gray-800');
+
+            // ユーザー名の要素を作成し、認証状態に応じてクラスを設定
+            const usernameSpan = document.createElement('span');
+            usernameSpan.classList.add('username');
+            usernameSpan.classList.add(isCertified ? 'certified-username' : 'uncertified-username');
+            usernameSpan.textContent = username + ": ";
+
+            const certifiedMark = isCertified ? '<span class="ml-1 text-blue-500">☑︎</span>' : '';
+            messageElement.appendChild(usernameSpan);
+            messageElement.innerHTML += message + certifiedMark;
+
+            messageContainer.appendChild(messageElement);
+            totalMessages++;
+            totalMessagesDisplay.textContent = formatCounter(totalMessages);
+
+            // 最大メッセージ数を超えたら古いメッセージを削除
+            const maxMessages = 25;
+            if (messageContainer.children.length > maxMessages) {
+                messageContainer.removeChild(messageContainer.firstChild);
+            }
+
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+
+        function updateMessageRate() {
+            const currentTime = performance.now();
+            const deltaTime = currentTime - lastTime;
+
+            if (deltaTime >= 1000) {
+                messagesPerSecond = messageCountThisSecond;
+                messageRateDisplay.textContent = `${formatCounter(messagesPerSecond)} msg/s`;
+                messageCountThisSecond = 0;
+                lastTime = currentTime;
+            }
+            messageCountThisSecond++;
+        }
+
+        function startMessageGeneration() {
+            let messageSpeed = parseInt(messageSpeedInput.value);
+            speedValueDisplay.textContent = `${messageSpeed} msg/s`;
+            clearInterval(intervalId);
+            const intervalTime = 1000 / messageSpeed;
+
+            lastTime = performance.now();
+            messageCountThisSecond = 0;
+
+            intervalId = setInterval(() => {
+                generateMessage(totalMessages % 25 === 0);
+                updateMessageRate();
+            }, intervalTime);
+        }
+
+        function resetMessages() {
+            if (isResetting) return;
+            isResetting = true;
+            resetPopup.classList.remove('hidden');
+            resetPopup.querySelector('.modal').classList.add('fade-in');
+        }
+
+        function confirmReset() {
+            messageContainer.innerHTML = '';
+            totalMessages = 0;
+            totalMessagesDisplay.textContent = formatCounter(totalMessages);
+            messagesPerSecond = 0;
+            messageRateDisplay.textContent = '0 msg/s';
+            counterStatusDisplay.textContent = '';
+            counterChanged = false;
+            clearInterval(intervalId);
+            resetPopup.classList.add('hidden');
+            isResetting = false;
+        }
+
+        function cancelReset() {
+            resetPopup.classList.add('hidden');
+            isResetting = false;
+        }
+
+        function showChangeCounterPopup() {
+            if (isChangingCounter) return;
+            isChangingCounter = true;
+            changeCounterPopup.classList.remove('hidden');
+            changeCounterPopup.querySelector('.modal').classList.add('fade-in');
+        }
+
+        function changeCounterValue() {
+            const newCounterValue = parseInt(newCounterValueInput.value);
+            if (!isNaN(newCounterValue)) {
+                totalMessages = newCounterValue;
+                totalMessagesDisplay.textContent = formatCounter(totalMessages);
+                messageRateDisplay.textContent = '0 msg/s';
+                messagesPerSecond = 0;
+                messageCountThisSecond = 0;
+                lastTime = performance.now();
+                changeCounterPopup.classList.add('hidden');
+                isChangingCounter = false;
+                counterStatusDisplay.textContent = '変更済み';
+                counterChanged = true;
+                newCounterValueInput.value = "";
+            } else {
+                alert("有効な数値を入力してください。");
+            }
+        }
+
+        function cancelChangeCounter() {
+            changeCounterPopup.classList.add('hidden');
+            isChangingCounter = false;
+        }
+
+        messageSpeedInput.addEventListener('input', startMessageGeneration);
+        sendMessageButton.addEventListener('click', () => {
+            const messageText = messageInput.value;
+            if (messageText.trim() !== "") {
+                generateMessage(true, messageText); // 送信メッセージは認証済みとして扱う
+                messageInput.value =""; // 入力フィールドをクリア
+            }
+        });
+
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                sendMessageButton.click();
+            }
+        });
+
+        resetButton.addEventListener('click', resetMessages);
+        confirmResetButton.addEventListener('click', confirmReset);
+        cancelResetButton.addEventListener('click', cancelReset);
+        changeCounterButton.addEventListener('click', showChangeCounterPopup);
+        confirmChangeCounterButton.addEventListener('click', changeCounterValue);
+        cancelChangeCounterButton.addEventListener('click', cancelChangeCounter);
+
+
+        startMessageGeneration(); // ページ読み込み時にメッセージ生成を開始
+    </script>
+</body>
+</html>
