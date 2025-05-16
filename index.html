@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>リッチメッセージジェネレーター</title>
-    <!-- Robotoフォントを読み込み -->
+    <!-- Google SansからRobotoに変更 -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <style>
@@ -128,7 +128,7 @@
                     <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 fade-in">
                         <div class="sm:flex sm:items-start">
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title-change">
                                     カウンター数値を変更
                                 </h3>
                                 <div class="mt-2">
@@ -171,7 +171,7 @@
         const changeCounterButton = document.getElementById('change-counter-button');
         const changeCounterPopup = document.getElementById('change-counter-popup');
         const confirmChangeCounterButton = document.getElementById('confirm-change-counter');
-        const cancelChangeCounterButton = documentgetElementById('cancel-change-counter');
+        const cancelChangeCounterButton = document.getElementById('cancel-change-counter');
         const newCounterValueInput = document.getElementById('new-counter-value');
         const counterStatusDisplay = document.getElementById('counter-status');
 
@@ -417,33 +417,34 @@
             isChangingCounter = true;
             changeCounterPopup.classList.remove('hidden');
             changeCounterPopup.querySelector('.modal').classList.add('fade-in');
+            // モーダルタイトルを修正（もし `modal-title-change` が意図したものでなければ `modal-title` に戻すか、適切なIDを指定）
+            // この例では `modal-title-change` をそのまま使用しますが、HTML側で定義されていることを確認してください。
+            // もし `change-counter-popup` 内のタイトルIDが `modal-title` であれば、以下のようにします。
+            // changeCounterPopup.querySelector('#modal-title').textContent = "カウンター数値を変更";
         }
 
         function changeCounterValue() {
             const newCounterValue = parseInt(newCounterValueInput.value);
-            if (!isNaN(newCounterValue) && newCounterValue >= 0) { // 負の数は許可しない
+            if (!isNaN(newCounterValue)) {
                 totalMessages = newCounterValue;
                 totalMessagesDisplay.textContent = formatCounter(totalMessages);
-                messageRateDisplay.textContent = '0 msg/s'; // レートはリセット
+                messageRateDisplay.textContent = '0 msg/s';
                 messagesPerSecond = 0;
                 messageCountThisSecond = 0;
-                lastTime = performance.now(); // 時間もリセットして新しいレート計算を開始
+                lastTime = performance.now();
                 changeCounterPopup.classList.add('hidden');
                 isChangingCounter = false;
                 counterStatusDisplay.textContent = '変更済み';
                 counterChanged = true;
-                newCounterValueInput.value = ""; // 入力フィールドをクリア
-                // カウンター変更後も自動生成は続ける場合はここに追加
-                // startMessageGeneration();
+                newCounterValueInput.value = "";
             } else {
-                alert("有効な0以上の数値を入力してください。");
+                alert("有効な数値を入力してください。");
             }
         }
 
         function cancelChangeCounter() {
             changeCounterPopup.classList.add('hidden');
             isChangingCounter = false;
-            newCounterValueInput.value = ""; // 入力フィールドをクリア
         }
 
         messageSpeedInput.addEventListener('input', startMessageGeneration);
